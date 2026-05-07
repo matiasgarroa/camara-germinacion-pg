@@ -3,7 +3,7 @@
 Este repositorio contiene la documentación, diseño y código fuente para la construcción de una cámara de germinación controlada. El proyecto está orientado específicamente a la estandarización y automatización de los ensayos para el cálculo del **Poder Germinativo (PG)** en semillas agronómicas.
 
 ## 👥 Integrantes
-* Agustín Bescuñan
+* Agustín Bascuñan
 * Santiago Boato
 * Matias Garro Alou
 
