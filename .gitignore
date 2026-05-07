@@ -1,0 +1,11 @@
+# Archivos de compilación y temporales de Arduino
+*.elf
+*.hex
+*.eep
+*.bin
+*.lss
+*.sym
+*.map
+*.out
+build/
+.pio/
