@@ -4,112 +4,262 @@
 #include "RTClib.h"
 #include "SHT2x.h"
 
-// --- CONFIGURACIÓN DE PINES ---
-const int SD_CS = 10; // Pin Digital para Chip Select del SD (Protocolo SPI)
+// ======================================================
+// CONFIGURACIÓN DE PINES
+// ======================================================
 
-// 1. DEFINICIÓN DE PINES (Simulación de Actuadores)
-// Le asignamos un nombre a cada pin para que el código sea fácil de leer
-const int pinMantaTermica = 6;  // LED Rojo
-const int pinHumidificador = 7; // LED Azul
-const int pinCooler = 8;        // LED Verde
-const int pinLuces = 9;         // LED Amarillo o Blanco
+// SD
+const int SD_CS = 10;
 
-// --- INSTANCIAS DE MÓDULOS ---
+// Actuadores / Relés / LEDs
+const int pinMantaTermica = 6;   // ROJO
+const int pinHumidificador = 7;  // AZUL
+const int pinCooler = 8;         // VERDE
+const int pinLuces = 9;          // AMARILLO / BLANCO
+
+// ======================================================
+// INSTANCIAS
+// ======================================================
+
 RTC_DS3231 rtc;
 SHT2x sht;
-bool sdPresente = false; // Variable para rastrear el estado de la SD
+
+bool sdPresente = false;
+
+// ======================================================
+// SETUP
+// ======================================================
 
 void setup() {
-  Serial.begin(9600);
-  Wire.begin(); // Bus I2C para RTC y SHT (Pines A4/A5 en WAVGAT)
 
-  // 2. CONFIGURACIÓN INICIAL DE ACTUADORES
-  // Le decimos al Arduino que estos pines van a emitir energía (OUTPUT)
+  Serial.begin(9600);
+
+  // ---------------- I2C ----------------
+
+  Wire.begin();
+  Wire.setClock(100000);
+
+  // ======================================================
+  // CONFIGURACIÓN DE PINES
+  // ======================================================
+
   pinMode(pinMantaTermica, OUTPUT);
   pinMode(pinHumidificador, OUTPUT);
   pinMode(pinCooler, OUTPUT);
   pinMode(pinLuces, OUTPUT);
 
-  // --- MÓDULO 1: INICIALIZACIÓN SD ---
+  // RELÉS ACTIVOS EN LOW
+  // HIGH = apagado
+  // LOW  = encendido
+
+  digitalWrite(pinMantaTermica, HIGH);
+  digitalWrite(pinHumidificador, HIGH);
+  digitalWrite(pinCooler, HIGH);
+  digitalWrite(pinLuces, HIGH);
+
+  // ======================================================
+  // INICIALIZACIÓN SD
+  // ======================================================
+
   Serial.print("Iniciando SD...");
+
   if (!SD.begin(SD_CS)) {
-    Serial.println(" [!] No se encontro tarjeta. Continuando sin SD.");
+
+    Serial.println(" [!] No se encontro tarjeta SD.");
     sdPresente = false;
+
   } else {
-    Serial.println(" [OK] Tarjeta lista.");
+
+    Serial.println(" [OK] Tarjeta SD lista.");
     sdPresente = true;
   }
 
-  // --- MÓDULO 2: INICIALIZACIÓN RTC (Digital) ---
+  // ======================================================
+  // INICIALIZACIÓN RTC
+  // ======================================================
+
   if (!rtc.begin()) {
+
     Serial.println(" [!] No se encontro RTC.");
-  } else if (rtc.lostPower()) {
+
+  } else {
+
+    Serial.println(" [OK] RTC detectado.");
+
+    // SINCRONIZAR SOLO UNA VEZ
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
   }
 
-  // --- MÓDULO 3: INICIALIZACIÓN SHT2x (Digital) ---
+  // ======================================================
+  // INICIALIZACIÓN SENSOR SHT
+  // ======================================================
+
   if (!sht.begin()) {
+
     Serial.println(" [!] No se encontro SHT2x.");
+
+  } else {
+
+    Serial.println(" [OK] Sensor SHT2x detectado.");
   }
+
+  Serial.println("-----------------------------------");
 }
 
+// ======================================================
+// LOOP
+// ======================================================
+
 void loop() {
-  // --- LECTURA SENSOR SHT ---
+
+  // ======================================================
+  // LECTURA SENSOR
+  // ======================================================
+
   sht.read();
+
   float temp = sht.getTemperature();
   float hum = sht.getHumidity();
 
-  // --- LECTURA TIEMPO RTC ---
+  // ======================================================
+  // LECTURA RTC
+  // ======================================================
+
   DateTime now = rtc.now();
 
-  // --- SALIDA DE DATOS POR SERIAL ---
-  Serial.print(now.day()); Serial.print("/"); Serial.print(now.month()); Serial.print(" ");
-  Serial.print(now.hour()); Serial.print(":"); Serial.print(now.minute());
-  Serial.print(" -> Temp: "); Serial.print(temp, 1);
-  Serial.print("C | Hum: "); Serial.print(hum, 1); Serial.println("%");
+  // ======================================================
+  // MONITOR SERIAL
+  // ======================================================
 
-  // --- MÓDULO 4: REGISTRO EN SD CON MENSAJE DE ERROR ---
-  File dataFile = SD.open("log.txt", FILE_WRITE);
-  if (dataFile) {
-    dataFile.print(now.timestamp());
-    dataFile.print(","); dataFile.print(temp);
-    dataFile.print(","); dataFile.println(hum);
-    dataFile.close();
-    if (!sdPresente) {
-      Serial.println(" [!] Tarjeta insertada y detectada.");
-      sdPresente = true;
+  Serial.print(now.day());
+  Serial.print("/");
+
+  Serial.print(now.month());
+  Serial.print("/");
+
+  Serial.print(now.year());
+
+  Serial.print(" ");
+
+  if (now.hour() < 10) Serial.print("0");
+  Serial.print(now.hour());
+
+  Serial.print(":");
+
+  if (now.minute() < 10) Serial.print("0");
+  Serial.print(now.minute());
+
+  Serial.print(":");
+
+  if (now.second() < 10) Serial.print("0");
+  Serial.print(now.second());
+
+  Serial.print(" -> Temp: ");
+
+  Serial.print(temp, 1);
+
+  Serial.print(" C | Hum: ");
+
+  Serial.print(hum, 1);
+
+  Serial.println(" %");
+
+  // ======================================================
+  // GUARDAR EN SD
+  // ======================================================
+
+  if (sdPresente) {
+
+    File dataFile = SD.open("log.txt", FILE_WRITE);
+
+    if (dataFile) {
+
+      // Encabezado automático
+      if (dataFile.size() == 0) {
+
+        dataFile.println("FechaHora,Temperatura,Humedad");
+      }
+
+      dataFile.print(now.timestamp());
+      dataFile.print(",");
+
+      dataFile.print(temp);
+      dataFile.print(",");
+
+      dataFile.println(hum);
+
+      dataFile.close();
+
+    } else {
+
+      Serial.println(" [!] ERROR SD: No se puede escribir.");
+      sdPresente = false;
     }
-  } else {
-    // Si no puede abrir el archivo, avisa que la tarjeta no está o falló
-    Serial.println(" [!] ERROR SD: No se puede escribir. Verifique que la tarjeta este insertada.");
-    sdPresente = false;
   }
 
-  // --- 3. BUCLE PRINCIPAL (Encendido Secuencial de LEDs) ---
-  
-  // 1. Se enciende el LED Rojo (Manta) y espera 1 seg
-  digitalWrite(pinMantaTermica, HIGH); 
-  delay(1000);                         
+  // ======================================================
+  // CONTROL HUMEDAD
+  // ======================================================
 
-  // 2. Se suma el LED Azul (Humidificador) y espera 1 seg
-  digitalWrite(pinHumidificador, HIGH); 
-  delay(1000);                          
+  // AZUL = Humidificador
 
-  // 3. Se suma el LED Verde (Cooler) y espera 1 seg
-  digitalWrite(pinCooler, HIGH);        
-  delay(1000);                          
+  if (hum > 40) {
 
-  // 4. Se suma el LED Amarillo/Blanco (Luces) y espera 1 seg
-  digitalWrite(pinLuces, HIGH);         
-  delay(1000);                          
+    digitalWrite(pinHumidificador, LOW);
 
-  // Apagamos todos los actuadores a la vez
-  digitalWrite(pinMantaTermica, LOW);
-  digitalWrite(pinHumidificador, LOW);
-  digitalWrite(pinCooler, LOW);
+    Serial.println("Humedad normal -> Humidificador APAGADO");
+
+  } else {
+
+    digitalWrite(pinHumidificador, HIGH);
+
+    Serial.println("Humedad baja -> Humidificador ENCENDIDO");
+  }
+
+  // ======================================================
+  // CONTROL TEMPERATURA
+  // ======================================================
+
+  // ROJO = Manta térmica
+
+  if (temp < 25) {
+
+    digitalWrite(pinMantaTermica, HIGH);
+
+    Serial.println("Temperatura baja -> Manta TERMICA ENCENDIDA");
+
+  } else {
+
+    digitalWrite(pinMantaTermica, LOW);
+    Serial.println("Temperatura normal -> Manta TERMICA APAGADA");
+
+  }
+
+  // VERDE = Cooler
+
+  if (temp > 30) {
+
+    digitalWrite(pinCooler, HIGH);
+
+    Serial.println("Temperatura alta -> COOLER ENCENDIDO");
+
+  } else {
+
+    digitalWrite(pinCooler, LOW);
+    Serial.println("Temperatura normal -> COOLER APAGADO");
+  }
+
+  // ======================================================
+  // LUCES
+  // ======================================================
+
+  // Ejemplo: siempre encendidas
+
   digitalWrite(pinLuces, LOW);
 
-  // Pausa final de 1 segundo con todo apagado antes de reiniciar el loop 
-  // (Tiempo total del ciclo: 5 segundos)
-  delay(1000); 
+  // ======================================================
+  // TIEMPO DE MUESTREO
+  // ======================================================
+
+  delay(5000);
 }
