@@ -85,28 +85,31 @@ void loop() {
     sdPresente = false;
   }
 
-  // --- 3. BUCLE PRINCIPAL (Simulación de actuadores) ---
+  // --- 3. BUCLE PRINCIPAL (Encendido Secuencial de LEDs) ---
   
-  // --- Simulación Manta Térmica ---
-  digitalWrite(pinMantaTermica, HIGH); // Enciende el LED Rojo
-  delay(1000);                         // Espera 1000 milisegundos (1 segundo)
-  digitalWrite(pinMantaTermica, LOW);  // Apaga el LED Rojo
+  // 1. Se enciende el LED Rojo (Manta) y espera 1 seg
+  digitalWrite(pinMantaTermica, HIGH); 
+  delay(1000);                         
 
-  // --- Simulación Humidificador ---
-  digitalWrite(pinHumidificador, HIGH); // Enciende el LED Azul
+  // 2. Se suma el LED Azul (Humidificador) y espera 1 seg
+  digitalWrite(pinHumidificador, HIGH); 
   delay(1000);                          
-  digitalWrite(pinHumidificador, LOW);  
 
-  // --- Simulación Cooler / Extractor ---
-  digitalWrite(pinCooler, HIGH);        // Enciende el LED Verde
+  // 3. Se suma el LED Verde (Cooler) y espera 1 seg
+  digitalWrite(pinCooler, HIGH);        
   delay(1000);                          
-  digitalWrite(pinCooler, LOW);         
 
-  // --- Simulación Luces (Fotoperiodo) ---
-  digitalWrite(pinLuces, HIGH);         // Enciende el LED Amarillo/Blanco
+  // 4. Se suma el LED Amarillo/Blanco (Luces) y espera 1 seg
+  digitalWrite(pinLuces, HIGH);         
   delay(1000);                          
-  digitalWrite(pinLuces, LOW);          
 
-  // Ajustado: Muestreo restante para completar 5 segundos totales (4 segs invertidos en los LEDs de arriba + 1s de pausa = 5s por ciclo)
+  // Apagamos todos los actuadores a la vez
+  digitalWrite(pinMantaTermica, LOW);
+  digitalWrite(pinHumidificador, LOW);
+  digitalWrite(pinCooler, LOW);
+  digitalWrite(pinLuces, LOW);
+
+  // Pausa final de 1 segundo con todo apagado antes de reiniciar el loop 
+  // (Tiempo total del ciclo: 5 segundos)
   delay(1000); 
 }
