@@ -7,6 +7,13 @@
 // --- CONFIGURACIÓN DE PINES ---
 const int SD_CS = 10; // Pin Digital para Chip Select del SD (Protocolo SPI)
 
+// 1. DEFINICIÓN DE PINES (Simulación de Actuadores)
+// Le asignamos un nombre a cada pin para que el código sea fácil de leer
+const int pinMantaTermica = 6;  // LED Rojo
+const int pinHumidificador = 7; // LED Azul
+const int pinCooler = 8;        // LED Verde
+const int pinLuces = 9;         // LED Amarillo o Blanco
+
 // --- INSTANCIAS DE MÓDULOS ---
 RTC_DS3231 rtc;
 SHT2x sht;
@@ -15,6 +22,13 @@ bool sdPresente = false; // Variable para rastrear el estado de la SD
 void setup() {
   Serial.begin(9600);
   Wire.begin(); // Bus I2C para RTC y SHT (Pines A4/A5 en WAVGAT)
+
+  // 2. CONFIGURACIÓN INICIAL DE ACTUADORES
+  // Le decimos al Arduino que estos pines van a emitir energía (OUTPUT)
+  pinMode(pinMantaTermica, OUTPUT);
+  pinMode(pinHumidificador, OUTPUT);
+  pinMode(pinCooler, OUTPUT);
+  pinMode(pinLuces, OUTPUT);
 
   // --- MÓDULO 1: INICIALIZACIÓN SD ---
   Serial.print("Iniciando SD...");
@@ -56,7 +70,6 @@ void loop() {
 
   // --- MÓDULO 4: REGISTRO EN SD CON MENSAJE DE ERROR ---
   File dataFile = SD.open("log.txt", FILE_WRITE);
-  
   if (dataFile) {
     dataFile.print(now.timestamp());
     dataFile.print(","); dataFile.print(temp);
@@ -72,5 +85,28 @@ void loop() {
     sdPresente = false;
   }
 
-  delay(5000); // Muestreo cada 5 segundos
+  // --- 3. BUCLE PRINCIPAL (Simulación de actuadores) ---
+  
+  // --- Simulación Manta Térmica ---
+  digitalWrite(pinMantaTermica, HIGH); // Enciende el LED Rojo
+  delay(1000);                         // Espera 1000 milisegundos (1 segundo)
+  digitalWrite(pinMantaTermica, LOW);  // Apaga el LED Rojo
+
+  // --- Simulación Humidificador ---
+  digitalWrite(pinHumidificador, HIGH); // Enciende el LED Azul
+  delay(1000);                          
+  digitalWrite(pinHumidificador, LOW);  
+
+  // --- Simulación Cooler / Extractor ---
+  digitalWrite(pinCooler, HIGH);        // Enciende el LED Verde
+  delay(1000);                          
+  digitalWrite(pinCooler, LOW);         
+
+  // --- Simulación Luces (Fotoperiodo) ---
+  digitalWrite(pinLuces, HIGH);         // Enciende el LED Amarillo/Blanco
+  delay(1000);                          
+  digitalWrite(pinLuces, LOW);          
+
+  // Ajustado: Muestreo restante para completar 5 segundos totales (4 segs invertidos en los LEDs de arriba + 1s de pausa = 5s por ciclo)
+  delay(1000); 
 }
