@@ -1,4 +1,4 @@
-# Cámara de Germinación Automatizada - Cálculo de Poder Germinativo (PG)
+# 🌱 Cámara de Germinación Automatizada - Cálculo de Poder Germinativo (PG)
 
 Este repositorio contiene la documentación, diseño y código fuente para la construcción de una cámara de germinación controlada. El proyecto está orientado específicamente a la estandarización y automatización de los ensayos para el cálculo del **Poder Germinativo (PG)** en semillas agronómicas.
 
@@ -7,12 +7,27 @@ Este repositorio contiene la documentación, diseño y código fuente para la co
 * Santiago Boato
 * Matias Garro Alou
 
+## 🚀 ¿Para qué sirve?
+El sistema sirve para ejecutar ensayos de germinación en un microclima donde las variables ambientales (temperatura, humedad y fotoperiodo) son manipuladas a voluntad de forma automática. Esto permite evaluar la respuesta fisiológica de las semillas en condiciones óptimas e ininterrumpidas, garantizando que los resultados dependan exclusivamente del vigor biológico del lote y no del clima del entorno.
+
 ## 🎯 ¿Qué problemas se buscan abordar?
-El ensayo de Poder Germinativo es fundamental para determinar la viabilidad y el vigor de un lote de semillas. Los métodos manuales convencionales están expuestos a fluctuaciones ambientales que pueden alterar los resultados. 
+El ensayo de Poder Germinativo es fundamental para determinar la viabilidad de un lote de semillas. Los métodos manuales convencionales están expuestos a fluctuaciones ambientales que pueden alterar los resultados. 
 Este proyecto busca solucionar:
 * **Falta de estabilidad climática:** Mantiene la temperatura y humedad en los rangos estrictos que requiere la semilla de forma automatizada.
-* **Carencia de trazabilidad de datos:** Implementa un sistema de registro continuo (Datalogging) para analizar el historial de temperatura y humedad durante todo el ciclo del ensayo.
 * **Dependencia manual:** Automatiza los ciclos de luz, ventilación y mantenimiento de humedad sin necesidad de intervención humana constante.
+* **Carencia de trazabilidad de datos:** Elimina la pérdida de información sobre lo que ocurre durante la noche o los fines de semana.
+
+## 📊 ¿Para qué sirve el registro de datos?
+El sistema de registro continuo (Datalogger) guarda un historial ininterrumpido en la memoria MicroSD. Esto es crucial para la **trazabilidad y validez del ensayo**. Permite:
+* Demostrar de forma objetiva que el ensayo cumplió con los estándares de temperatura y humedad durante los 7 a 14 días requeridos.
+* Graficar las curvas climáticas y cruzarlas con la curva de emergencia de las plántulas.
+* Descartar fallas de equipamiento: si el Poder Germinativo resulta bajo, los datos permiten comprobar que no fue a causa de un golpe de calor o falta de humedad en la cámara.
+
+## 🧑‍🌾 ¿Quién es el público objetivo?
+* Estudiantes universitarios de ciencias agrarias y botánica.
+* Productores agrícolas que necesiten testear la calidad de su material de siembra antes de ir al lote.
+* Laboratorios comerciales de análisis de semillas y viveristas.
+* Investigadores enfocados en fisiología vegetal y biotecnología.
 
 ## 🛠️ ¿Qué materiales se necesitan?
 
@@ -23,7 +38,7 @@ Este proyecto busca solucionar:
 * Módulo Lector de MicroSD (SPI) + Tarjeta MicroSD
 
 **Actuadores y Climatización**
-* Módulo de Relés de 4 Canales (Optoacoplado de 5V)
+* Módulo de Relés de 4 Canales (Optoacoplado de 5V) o transistores independientes.
 * Manta Térmica para Terrarios (15W a 20W)
 * Módulo Humidificador Ultrasónico de 5V
 * Cooler de PC de 12V (80mm o 120mm)
@@ -33,21 +48,26 @@ Este proyecto busca solucionar:
 * Fuente de Alimentación de 12V (2 o 3 Amperes)
 * Módulo Step-Down LM2596
 * Conector Jack Hembra o Bornera
-* Protoboard de 400 u 830 puntos (para armar sin soldar)
-* Cables Jumper
+* Protoboard de 400 u 830 puntos y cables Jumper
 
 **Estructura y Sustrato de Ensayo**
 * Conservadora de telgopor (30 a 50 litros)
-* Tupper o Caja Estanca Pequeña (para guardar y aislar el Arduino)
+* Tupper o Caja Estanca Pequeña (para guardar y aislar el Arduino de la humedad)
 * Papel de Germinación (Tipo Kraft o secante grueso)
 * Bandeja de plástico con rejilla
 
 ## 💻 ¿Necesita algún software propio?
-La programación del microcontrolador se realiza a través del **Arduino IDE**. El sistema requiere la instalación de librerías de terceros para la comunicación con el sensor SHT31, el reloj RTC y el módulo de memoria SD. Posteriormente, los archivos de registro generados por la cámara (archivos .csv o .txt) podrán ser analizados con cualquier software de hojas de cálculo convencional (como Excel o Google Sheets) para trazar las curvas de las variables ambientales.
+La programación del microcontrolador se realiza a través del **Arduino IDE**. El sistema requiere la instalación de librerías de terceros para la comunicación con el sensor SHT31, el reloj RTC y el módulo de memoria SD. Los archivos de registro generados (.csv o .txt) podrán ser analizados con cualquier software de hojas de cálculo convencional (como Excel o Google Sheets).
 
 ## 📍 ¿Dónde se va a probar?
-Las pruebas de estrés germinativo y calibración de los sensores se llevarán a cabo íntegramente en el interior de la **conservadora de telgopor**. Este habitáculo funcionará como la cámara de aislamiento térmico, albergando la bandeja de plástico y el papel secante, garantizando así un microclima estable sin interferencias del ambiente exterior.
+Las pruebas de estrés germinativo y calibración de los sensores se llevarán a cabo íntegramente en el interior de la **conservadora de telgopor**. Este habitáculo funcionará como cámara de aislamiento térmico, albergando la bandeja de plástico y el papel secante, garantizando un microclima estable sin interferencias del ambiente exterior.
+
+## 🏫 ¿Cómo lo mostraremos en el aula?
+Se presentará el hardware ensamblado, mostrando la separación entre la etapa de control (Arduino aislado) y la etapa de climatización dentro de la conservadora.
+Realizaremos una demostración en vivo modificando las variables ambientales (acercando calor o humedad al sensor) para que se observe cómo el sistema toma decisiones y activa las salidas correspondientes. Además, extraeremos la tarjeta MicroSD en tiempo real y abriremos el archivo generado en una computadora para evidenciar la capacidad de guardado y trazabilidad del datalogger.
 
 ## 📈 Estado Actual y Avances
-* **Día 1:** Se completó la etapa de investigación técnica, la selección de los requerimientos de hardware y el diseño del flujo del sistema.
-* **Lógica del Código:** Toda la lógica de control, la lectura de los sensores y la estructura de toma de decisiones del código están listas. Para poder avanzar con las pruebas de software de manera inmediata, el diseño electrónico se adaptó para realizar una simulación en la protoboard usando luces LED normales en lugar de los actuadores definitivos. Esto permite validar visualmente los momentos exactos de conmutación antes de integrar físicamente el módulo de relés de 4 canales.
+
+* **Semana 1:** Se completó la etapa de investigación técnica, la definición del alcance agronómico, la selección de los requerimientos de hardware y el diseño del flujo lógico del sistema.
+* **Semana 2:** Se finalizó la lógica del código principal. Para avanzar con las pruebas, se realizó el diseño eléctrico en la protoboard simulando las cargas con luces LED, lo que permitió validar visualmente los momentos exactos de conmutación antes de utilizar los relés definitivos.
+* **Semana 3:** Se trabajó en el hardware definitivo, verificando que todos los componentes pudieran ser integrados correctamente. Se depuraron y solucionaron los problemas de sincronización del reloj RTC y los errores de escritura en el módulo de la tarjeta SD, garantizando un guardado de datos estable.
