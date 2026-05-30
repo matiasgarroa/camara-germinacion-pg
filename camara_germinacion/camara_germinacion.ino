@@ -5,20 +5,28 @@
 #include "SHT2x.h"
 
 // ======================================================
-// CONFIGURACIÓN DE PINES
+// CONFIGURACIÓN DE PINES Y UMBRALES
 // ======================================================
-
-// SD
 const int SD_CS = 10;
-
-// Actuadores (LEDs simulados)
 const int pinMantaTermica = 6;   // ROJO
 const int pinHumidificador = 7;  // AZUL
 const int pinCooler = 8;         // VERDE
 const int pinLuces = 9;          // AMARILLO / BLANCO
 
+// Variables agronómicas (fáciles de calibrar aquí arriba)
+const float TEMP_MIN = 25.0;
+const float TEMP_MAX = 30.0;
+const float HUM_OBJETIVO = 40.0;
+const float HISTERESIS = 2.0; // Margen para evitar rebotes mecánicos en relés
+
+// Temporización no bloqueante (en milisegundos)
+const unsigned long INTERVALO_CONTROL = 5000;  // Evalúa el clima cada 5 segundos
+const unsigned long INTERVALO_SD = 60000;      // Escribe en la SD cada 1 minuto
+unsigned long tiempoAnteriorControl = 0;
+unsigned long tiempoAnteriorSD = 0;
+
 // ======================================================
-// INSTANCIAS DE MÓDULOS
+// INSTANCIAS GLOBALES
 // ======================================================
 RTC_DS3231 rtc;
 SHT2x sht;
@@ -28,144 +36,127 @@ bool sdPresente = false;
 // SETUP
 // ======================================================
 void setup() {
-  Serial.begin(9600);
-  Wire.begin(); // Bus I2C para RTC y SHT. Sin setClock para evitar problemas en placas WAVGAT
+  // Aumentamos los baudios para liberar tiempo de procesamiento
+  Serial.begin(115200);
+  Wire.begin(); 
 
-  // --- CONFIGURACIÓN DE PINES DE ACTUADORES ---
+  // Configuración y estado seguro inicial (APAGADOS)
   pinMode(pinMantaTermica, OUTPUT);
   pinMode(pinHumidificador, OUTPUT);
   pinMode(pinCooler, OUTPUT);
   pinMode(pinLuces, OUTPUT);
 
-  // Estado inicial
-  digitalWrite(pinMantaTermica, HIGH);
-  digitalWrite(pinHumidificador, HIGH);
-  digitalWrite(pinCooler, HIGH);
-  digitalWrite(pinLuces, HIGH);
+  digitalWrite(pinMantaTermica, LOW);
+  digitalWrite(pinHumidificador, LOW);
+  digitalWrite(pinCooler, LOW);
+  digitalWrite(pinLuces, HIGH); // Simulamos luces encendidas por defecto
 
-  // --- MÓDULO 1: INICIALIZACIÓN SD ---
-  Serial.print("Iniciando SD...");
+  Serial.println(F("=== INICIANDO SISTEMA ===")); // F() ahorra SRAM
+
+  // INICIALIZACIÓN SD
+  Serial.print(F("SD..."));
   if (!SD.begin(SD_CS)) {
-    Serial.println(" [!] No se encontro tarjeta. Continuando sin SD.");
-    sdPresente = false;
+    Serial.println(F(" [!] Falla. Continuando sin SD."));
   } else {
-    Serial.println(" [OK] Tarjeta lista.");
+    Serial.println(F(" [OK]"));
     sdPresente = true;
-  }
-
-  // --- MÓDULO 2: INICIALIZACIÓN RTC ---
-  if (!rtc.begin()) {
-    Serial.println(" [!] No se encontro RTC.");
-  } else if (rtc.lostPower()) {
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-  }
-
-  // --- MÓDULO 3: INICIALIZACIÓN SHT2x ---
-  if (!sht.begin()) {
-    Serial.println(" [!] No se encontro SHT2x.");
-  }
-  
-  Serial.println("-----------------------------------");
-  
-  if (sdPresente) {
     File dataFile = SD.open("log.txt", FILE_WRITE);
     if (dataFile) {
-      dataFile.println("=== SISTEMA ENCENDIDO / REINICIADO ===");
+      if (dataFile.size() == 0) {
+        dataFile.println(F("FechaHora,Temperatura,Humedad"));
+      }
+      dataFile.println(F("=== REINICIO ==="));
       dataFile.close();
     }
+  }
+
+  // INICIALIZACIÓN RTC
+  Serial.print(F("RTC..."));
+  if (!rtc.begin()) {
+    Serial.println(F(" [!] Falla."));
+  } else {
+    if (rtc.lostPower()) rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    Serial.println(F(" [OK]"));
+  }
+
+  // INICIALIZACIÓN SHT2x
+  Serial.print(F("SHT2x..."));
+  if (!sht.begin()) Serial.println(F(" [!] Falla."));
+  else Serial.println(F(" [OK]"));
+  
+  Serial.println(F("-----------------------------------"));
+}
+
+// ======================================================
+// LOOP PRINCIPAL (No bloqueante)
+// ======================================================
+void loop() {
+  unsigned long tiempoActual = millis();
+
+  // TAREA 1: CONTROL CLIMÁTICO (Cada 5 segundos)
+  if (tiempoActual - tiempoAnteriorControl >= INTERVALO_CONTROL) {
+    tiempoAnteriorControl = tiempoActual;
+    ejecutarControlClimatico();
+  }
+
+  // TAREA 2: REGISTRO DE DATOS (Cada 1 minuto)
+  if (tiempoActual - tiempoAnteriorSD >= INTERVALO_SD) {
+    tiempoAnteriorSD = tiempoActual;
+    registrarDatosSD();
   }
 }
 
 // ======================================================
-// LOOP
+// FUNCIONES ESPECÍFICAS
 // ======================================================
-void loop() {
-  // --- LECTURA SENSOR SHT ---
+void ejecutarControlClimatico() {
   sht.read();
   float temp = sht.getTemperature();
   float hum = sht.getHumidity();
-
-  // --- LECTURA TIEMPO RTC ---
   DateTime now = rtc.now();
 
-  // --- SALIDA DE DATOS POR SERIAL ---
-  Serial.print(now.day()); Serial.print("/"); Serial.print(now.month()); Serial.print(" ");
-  
-  // Agregamos formato con ceros a la hora para que se vea ordenado (ej: 09:05:02)
-  if (now.hour() < 10) Serial.print("0");
-  Serial.print(now.hour()); Serial.print(":");
-  if (now.minute() < 10) Serial.print("0");
-  Serial.print(now.minute()); Serial.print(":");
-  if (now.second() < 10) Serial.print("0");
-  Serial.print(now.second());
-  
-  Serial.print(" -> Temp: "); Serial.print(temp, 1);
-  Serial.print("C | Hum: "); Serial.print(hum, 1); Serial.println("%");
+  // Imprimir timestamp ordenado
+  char bufferSerial[25];
+  sprintf(bufferSerial, "%02d/%02d %02d:%02d:%02d -> T:%.1fC | H:%.1f%%", 
+          now.day(), now.month(), now.hour(), now.minute(), now.second(), temp, hum);
+  Serial.println(bufferSerial);
 
-  // --- MÓDULO 4: REGISTRO EN SD ---
-  File dataFile = SD.open("log.txt", FILE_WRITE);
-  
-  if (dataFile) {
-    // Si el archivo está vacío, le agrega el encabezado
-    if (dataFile.size() == 0) {
-      dataFile.println("FechaHora,Temperatura,Humedad");
-    }
-    
-    dataFile.print(now.timestamp());
-    dataFile.print(","); dataFile.print(temp);
-    dataFile.print(","); dataFile.println(hum);
-    dataFile.close();
-    
-    if (!sdPresente) {
-      Serial.println(" [!] Tarjeta insertada y detectada.");
-      sdPresente = true;
-    }
-  } else {
-    Serial.println(" [!] ERROR SD: No se puede escribir. Verifique que la tarjeta este insertada.");
-    sdPresente = false;
+  // CONTROL HUMEDAD CON HISTÉRESIS
+  if (hum < (HUM_OBJETIVO - HISTERESIS)) {
+    digitalWrite(pinHumidificador, HIGH); // Enciende si cae a 38%
+  } else if (hum > HUM_OBJETIVO) {
+    digitalWrite(pinHumidificador, LOW);  // Apaga al llegar a 40%
   }
 
-  // ======================================================
-  // CONTROL HUMEDAD
-  // ======================================================
-  // AZUL = Humidificador
-  if (hum > 40) {
-    digitalWrite(pinHumidificador, LOW);
-    Serial.println("Humedad normal -> Humidificador APAGADO");
-  } else {
-    digitalWrite(pinHumidificador, HIGH);
-    Serial.println("Humedad baja -> Humidificador ENCENDIDO");
-  }
-
-  // ======================================================
   // CONTROL TEMPERATURA
-  // ======================================================
-  // ROJO = Manta térmica
-  if (temp < 25) {
+  if (temp < TEMP_MIN) {
     digitalWrite(pinMantaTermica, HIGH);
-    Serial.println("Temperatura baja -> Manta TERMICA ENCENDIDA");
-  } else {
+  } else if (temp >= (TEMP_MIN + HISTERESIS)) {
     digitalWrite(pinMantaTermica, LOW);
-    Serial.println("Temperatura normal -> Manta TERMICA APAGADA");
   }
 
-  // VERDE = Cooler
-  if (temp > 30) {
+  if (temp > TEMP_MAX) {
     digitalWrite(pinCooler, HIGH);
-    Serial.println("Temperatura alta -> COOLER ENCENDIDO");
-  } else {
+  } else if (temp <= (TEMP_MAX - HISTERESIS)) {
     digitalWrite(pinCooler, LOW);
-    Serial.println("Temperatura normal -> COOLER APAGADO");
   }
+}
 
-  // ======================================================
-  // LUCES
-  // ======================================================
-  // Siempre encendidas en esta simulación
-  digitalWrite(pinLuces, LOW);
+void registrarDatosSD() {
+  if (!sdPresente) return; // Evita bloqueos si no hay SD
 
-  Serial.println("-----------------------------------");
-  
-  // Tiempo de muestreo
-  delay(5000); 
+  sht.read();
+  File dataFile = SD.open("log.txt", FILE_WRITE);
+  if (dataFile) {
+    DateTime now = rtc.now();
+    dataFile.print(now.timestamp());
+    dataFile.print(F(",")); 
+    dataFile.print(sht.getTemperature());
+    dataFile.print(F(",")); 
+    dataFile.println(sht.getHumidity());
+    dataFile.close();
+    Serial.println(F("[+] Dato guardado en SD"));
+  } else {
+    Serial.println(F("[!] Error escribiendo en SD"));
+  }
 }
