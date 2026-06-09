@@ -78,3 +78,34 @@ Arquitectura de las mejoras aplicadas
   - Histéresis (Cuidado de Relés): En el código original, si la humedad oscilaba rápidamente entre 39.9% y 40.1%, el relé se prendía y apagaba frenéticamente, acortando su vida útil. Se agregó la constante HISTERESIS. Ahora el humidificador enciende si cae a 38% y solo se apaga al tocar el 40%.
   - Optimización de Memoria (SRAM): Todo texto estático enviado por Serial (ej. "Temperatura alta") se envolvió en la macro F(). Esto traslada los textos de la frágil memoria SRAM (donde corre el código vivo) a la memoria Flash, previniendo reinicios súbitos por desbordamiento de memoria.
   - Velocidad de Bus y Formateo: Se subió el baud rate de 9600 a 115200 para que imprimir en pantalla no ralentice el bucle. Además, se reemplazaron las múltiples líneas Serial.print de la fecha/hora por un sprintf, que arma una cadena limpia e imprime todo en una sola operación de CPU.
+
+## 🚧 Alcance Actual, Limitaciones y Mejoras Futuras
+
+**Alcance y Limitaciones Actuales:**
+* **Prototipo en fase de simulación de potencia:** Actualmente, debido a la disponibilidad de componentes, los actuadores físicos definitivos (módulo de relés, manta térmica, humidificador ultrasónico) están siendo simulados mediante un arreglo de luces LED estándar en la protoboard. Esto nos permitió validar al 100% la lógica del microcontrolador, la multitarea no bloqueante y la lectura de sensores de forma segura.
+* **Lectura de datos local:** El sistema almacena el historial climático de forma local en la tarjeta SD, por lo que requiere la extracción física de la memoria para su análisis posterior.
+
+**Mejoras Necesarias / Potenciales:**
+* Integrar físicamente los actuadores de potencia de 12V/220V dentro de la conservadora de telgopor utilizando el módulo de relés optoacoplado.
+* Migrar en un futuro a una placa con conectividad Wi-Fi (como el ESP32) para transmitir las variables agronómicas y alertar sobre desvíos climáticos directamente a un teléfono móvil o dashboard en la nube.
+
+## 💾 Firmware y Código Fuente
+El código principal del microcontrolador (Firmware) se encuentra alojado en este repositorio en el archivo correspondiente `.ino`. 
+Para su compilación, se requiere la instalación de las siguientes librerías de terceros:
+* `RTClib.h` (Para el manejo del tiempo real)
+* `SHT2x.h` o equivalente (Para la lectura del sensor de temperatura y humedad)
+* Las librerías nativas `Wire.h`, `SPI.h` y `SD.h`.
+
+## 🔌 Esquemático del Circuito
+A continuación se detalla el diagrama de conexiones entre el Arduino, el bus I2C (sensores), el bus SPI (Módulo SD) y las salidas digitales para el control de los relés/LEDs.
+
+*(Nota para vos: Creá el circuito rápido en Tinkercad o Cirkit Designer como recomendó Nano, sacale una captura de pantalla, guardala en la misma carpeta del repositorio y reemplazá el enlace de abajo por el nombre de tu imagen)*
+
+![Esquemático del Circuito](ruta-a-tu-imagen-del-esquematico.jpg)
+
+## 📦 Diseño del Prototipo Final
+En el siguiente esquema se ilustra la disposición final de los componentes. El sistema consta de dos zonas aisladas: una caja estanca exterior (donde reside el Arduino y la electrónica de control para evitar cortocircuitos por humedad) y el interior de la conservadora de telgopor (donde se ubican las semillas, los actuadores climáticos y las sondas de los sensores).
+
+*(Nota para vos: Acá podés hacer un dibujo a mano alzada prolijo, un esquema rápido en Paint/PowerPoint, o sacarle una foto a la conservadora y subirla al repo)*
+
+![Esquema de la cámara](ruta-a-tu-dibujo-o-foto.jpg)
