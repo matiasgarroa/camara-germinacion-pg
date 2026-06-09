@@ -99,13 +99,10 @@ Para su compilación, se requiere la instalación de las siguientes librerías d
 ## 🔌 Esquemático del Circuito
 A continuación se detalla el diagrama de conexiones entre el Arduino, el bus I2C (sensores), el bus SPI (Módulo SD) y las salidas digitales para el control de los relés/LEDs.
 
-*(Nota para vos: Creá el circuito rápido en Tinkercad o Cirkit Designer como recomendó Nano, sacale una captura de pantalla, guardala en la misma carpeta del repositorio y reemplazá el enlace de abajo por el nombre de tu imagen)*
 
 ![Esquemático del Circuito](ruta-a-tu-imagen-del-esquematico.jpg)
 
 ## 📦 Diseño del Prototipo Final
 En el siguiente esquema se ilustra la disposición final de los componentes. El sistema consta de dos zonas aisladas: una caja estanca exterior (donde reside el Arduino y la electrónica de control para evitar cortocircuitos por humedad) y el interior de la conservadora de telgopor (donde se ubican las semillas, los actuadores climáticos y las sondas de los sensores).
-
-*(Nota para vos: Acá podés hacer un dibujo a mano alzada prolijo, un esquema rápido en Paint/PowerPoint, o sacarle una foto a la conservadora y subirla al repo)*
 
 ![Esquema de la cámara](ruta-a-tu-dibujo-o-foto.jpg)
