@@ -99,10 +99,11 @@ Para su compilación, se requiere la instalación de las siguientes librerías d
 ## 🔌 Esquemático del Circuito
 A continuación se detalla el diagrama de conexiones entre el Arduino, el bus I2C (sensores), el bus SPI (Módulo SD) y las salidas digitales para el control de los relés/LEDs.
 
-
 ![Esquemático del Circuito](images/circuito-camara-germinacion.png)
 
 ## 📦 Diseño del Prototipo Final
 En el siguiente esquema se ilustra la disposición final de los componentes. El sistema consta de dos zonas aisladas: una caja estanca exterior (donde reside el Arduino y la electrónica de control para evitar cortocircuitos por humedad) y el interior de la conservadora de telgopor (donde se ubican las semillas, los actuadores climáticos y las sondas de los sensores).
 
-![Esquema de la cámara](ruta-a-tu-dibujo-o-foto.jpg)
+![Esquema de la cámara exterior](images/Camara_exterior.png)
+![Esquema de la cámara exterior](images/Camara_interior-1.png)
+![Esquema de la cámara exterior](images/Camara_interior-2.png)
